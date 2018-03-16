@@ -130,11 +130,4 @@ if __name__ == '__main__':
 		decrypt(args)
 		sys.exit()
 
-	#export_data(args)
 	dump_database(args)
-
-	# if args.key:
-	# 	if not args.salt:
-	# 		print 'Need a salt with --salt...'
-	# 		sys.exit()		
-	# 	encrypt(args)
