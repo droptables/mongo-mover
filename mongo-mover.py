@@ -1,4 +1,4 @@
-import pymongo, subprocess, argparse, sys, os, datetime, shutil, zipfile
+import pymongo, subprocess, argparse, sys, os, datetime, shutil, zipfile, traceback, time
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC
 from Crypto.Protocol.KDF import PBKDF2
@@ -131,18 +131,57 @@ def encrypt_file(file, args):
 	del args
 	return file+".encrypted"	
 
+
+def scheduler(args):
+
+	while True:
+		orginaldestinaiton=args.destination
+		path, file = os.path.split(args.destination)
+		curtime = datetime.datetime.now()
+		args.destination=path+"/"+str(curtime)+"-"+file
+		try:
+			dump_database(args)
+			#sys.stdout.flush()
+			print "On a schedule, sleeping for "+str(args.schedule)+" seconds..."
+			args.destination=orginaldestinaiton
+			time.sleep(float(args.schedule))
+
+
+		except KeyboardInterrupt:
+			print 'Exiting gracefully...'
+
+			if os.path.isdir("dump"):
+				shutil.rmtree("dump")
+
+			if os.path.isfile(args.destination):
+				os.remove(args.destination)
+
+			sys.exit()
+
+		except:
+			print 'Backup failed at ' + str(datetime.datetime.now())
+			print traceback.format_exc()
+
+						
+
+
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='MongoDB backup script with salted AES encryption/decryption.')
 	parser.add_argument('-s','--server', action='store', dest="server", help="Server IP/DNS of MongoDB Server.")
 	parser.add_argument('-db','--database', action='store', dest="database", help="Database within MongoDB to be backed up.")
 	parser.add_argument('-ez','--export-zip', action='store', dest="destination", help="Path of the destination for the exported data zip file.")
 	parser.add_argument('-key','--key', action='store', dest="key", help="Key used to encrypt/decrypt data export.", required=True)
-	parser.add_argument('-salt','--salt', action='store', dest="salt", help="Salt used to encrypt/decrypt data export.", required=True)	
+	parser.add_argument('-salt','--salt', action='store', dest="salt", help="Salt used to encrypt/decrypt data export.", required=True)
+	parser.add_argument('-schedule','--schedule', action='store', dest="schedule", help="Seconds interval between backups.")	
 	parser.add_argument("-d", "--decrypt", action="store_true")
 	args = parser.parse_args()
 
 	if args.decrypt:
 		decrypt(args)
+		sys.exit()
+
+	if args.schedule:
+		scheduler(args)
 		sys.exit()
 
 	dump_database(args)
