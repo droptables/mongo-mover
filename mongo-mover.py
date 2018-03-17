@@ -5,18 +5,35 @@ from Crypto.Protocol.KDF import PBKDF2
 
 
 def decrypt(args):
-	print "Decrypting: "+str(args.inputfile)
+	if os.path.isdir("dump"):
+		shutil.rmtree("dump")
+
+	zip_ref = zipfile.ZipFile(args.destination, 'r')
+	zip_ref.extractall()
+	zip_ref.close()
+
+	for root, dirs, files in os.walk("dump"):
+		for file in files:
+		    decrypt_file(os.path.join(root, file), args)
+		    os.remove(os.path.join(root, file))
+
+
+def decrypt_file(file, args):
+
+
+	print "Decrypting: "+file
+
 	# input file
 	try:
-	    inputfile = open(args.inputfile, "rb")
+	    inputfile = open(file, "rb")
 	except IOError:
-	    sys.exit("Could not open the input file "+str(args.inputfile))
+	    sys.exit("Could not open the input file "+file)
 
 	# output file
 	try:
-	    output = open(args.inputfiledestination+".decrypted", "wb")
+	    output = open(file[:-10], "wb")
 	except IOError:
-	    sys.exit("Could not create the output file "+str(args.inputfiledestination+".decrypted"))
+	    sys.exit("Could not create the output file "+file+".decrypted")
 
 	# make 256bits keys for encryption and mac
 	salt = args.salt
@@ -118,12 +135,10 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='MongoDB backup script with salted AES encryption/decryption.')
 	parser.add_argument('-s','--server', action='store', dest="server", help="Server IP/DNS of MongoDB Server.")
 	parser.add_argument('-db','--database', action='store', dest="database", help="Database within MongoDB to be backed up.")
-	parser.add_argument('-ed','--export-destination', action='store', dest="destination", help="Path of the destination for the exported data.")
-	parser.add_argument('-key','--key', action='store', dest="key", help="Key used to encrypt/decrypt data export.", reqired=True)
-	parser.add_argument('-salt','--salt', action='store', dest="salt", help="Salt used to encrypt/decrypt data export.", reqired=True)	
+	parser.add_argument('-ez','--export-zip', action='store', dest="destination", help="Path of the destination for the exported data zip file.")
+	parser.add_argument('-key','--key', action='store', dest="key", help="Key used to encrypt/decrypt data export.", required=True)
+	parser.add_argument('-salt','--salt', action='store', dest="salt", help="Salt used to encrypt/decrypt data export.", required=True)	
 	parser.add_argument("-d", "--decrypt", action="store_true")
-	parser.add_argument("-i", "--inputfile", dest="inputfile", help="Inpute file to be decrypted.")
-	parser.add_argument("-id", "--inputfile-destination", dest="inputfiledestination", help="Destination of decrypted input file.")	
 	args = parser.parse_args()
 
 	if args.decrypt:
