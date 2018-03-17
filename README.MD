@@ -6,4 +6,4 @@
 
 * Decrypt an exported zip file to a destination directory.
 
-`./mongo-mover.py -ez exported.zip -key ch33s3 -salt mysalt
+`./mongo-mover.py -ez exported.zip -key ch33s3 -salt mysalt`
