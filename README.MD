@@ -6,7 +6,7 @@
 
 * Encrypt database backups on a schedule with intervals in seconds.
 
-`./mongo-mover.py -s localhost -db arc -key ch33s3 -salt mysalt -ez exported.zip -schedule 10`
+`./mongo-mover.py -s localhost -db arc -key ch33s3 -salt mysalt -ez exported.zip -schedule 86400`
 
 * Decrypt an exported zip file.
 

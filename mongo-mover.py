@@ -1,4 +1,4 @@
-import pymongo, subprocess, argparse, sys, os, datetime, shutil, zipfile, traceback, time
+import pymongo, subprocess, argparse, sys, os, datetime, shutil, zipfile, traceback, time, gzip
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC
 from Crypto.Protocol.KDF import PBKDF2
@@ -21,7 +21,7 @@ def decrypt(args):
 def decrypt_file(file, args):
 
 
-	print "Decrypting: "+file
+	print("Decrypting: "+file)
 
 	# input file
 	try:
@@ -36,7 +36,7 @@ def decrypt_file(file, args):
 	    sys.exit("Could not create the output file "+file+".decrypted")
 
 	# make 256bits keys for encryption and mac
-	salt = args.salt
+	salt = args.salt.encode()
 	kdf = PBKDF2(args.key, salt, 64, 1000)
 	key = kdf[:32]
 	key_mac = kdf[32:]
@@ -49,7 +49,7 @@ def decrypt_file(file, args):
 	verify = data[0:32]
 	mac.update(data[32:])
 
-	if mac.hexdigest() != verify:
+	if mac.hexdigest().encode() != verify:
 	    sys.exit("Message was modified, aborting decryption.")
 
 	# decrypt
@@ -63,7 +63,7 @@ def decrypt_file(file, args):
 	#delete data from memory
 	del salt
 	del args	
-	print 'Done!'
+	print('Done!')
 
 def dump_database(args):
 
@@ -73,9 +73,11 @@ def dump_database(args):
 	if os.path.isdir("dump"):
 		shutil.rmtree("dump")
 
+
 	command="mongodump -h "+args.server+" -d "+args.database
 	process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
 	output, error = process.communicate()
+
 
 	zipf = zipfile.ZipFile(args.destination, 'w', zipfile.ZIP_DEFLATED)
 
@@ -83,7 +85,7 @@ def dump_database(args):
 		for file in files:
 		    zipf.write(encrypt_file(os.path.join(root, file),args))
 		    os.remove(os.path.join(root, file))
-		    print 'Done!'
+		    print('Done!')
 
 	zipf.close()
 
@@ -92,7 +94,7 @@ def dump_database(args):
 
 
 def encrypt_file(file, args):
-	print 'Encrypting and writiing to zip file: '+str(file)+"..."
+	print('Encrypting and writiing to zip file: '+str(file)+"...")
 	# input file
 	try:
 	    inputfile = open(file, "rb")
@@ -106,7 +108,7 @@ def encrypt_file(file, args):
 	    sys.exit("Could not create the encrypted output file "+file+".encrypted")
 
 	# make 256bits keys for encryption and mac
-	salt = args.salt
+	salt = args.salt.encode()
 	kdf = PBKDF2(args.key, salt, 64, 1000)
 	key = kdf[:32]
 	key_mac = kdf[32:]
@@ -122,7 +124,7 @@ def encrypt_file(file, args):
 	mac.update(iv + encrypted)
 
 	# output
-	output.write(mac.hexdigest())
+	output.write(mac.hexdigest().encode())
 	output.write(iv)
 	output.write(encrypted)
 
@@ -142,13 +144,13 @@ def scheduler(args):
 		try:
 			dump_database(args)
 			#sys.stdout.flush()
-			print "On a schedule, sleeping for "+str(args.schedule)+" seconds..."
+			print("On a schedule, sleeping for "+str(args.schedule)+" seconds...")
 			args.destination=orginaldestinaiton
 			time.sleep(float(args.schedule))
 
 
 		except KeyboardInterrupt:
-			print 'Exiting gracefully...'
+			print('Exiting gracefully...')
 
 			if os.path.isdir("dump"):
 				shutil.rmtree("dump")
@@ -159,8 +161,8 @@ def scheduler(args):
 			sys.exit()
 
 		except:
-			print 'Backup failed at ' + str(datetime.datetime.now())
-			print traceback.format_exc()
+			print('Backup failed at ' + str(datetime.datetime.now()))
+			print(traceback.format_exc())
 
 						
 
